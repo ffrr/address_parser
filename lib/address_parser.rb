@@ -11,7 +11,7 @@ module AddressParser
       @address                = address
 
       @state_pattern       = nil
-      @postcode_pattern    = %r{\s?(?<postcode>\d+)$}
+      @postcode_pattern    = %r{\s?(?<postcode>(?:[2-7]\d{3}|08\d{2}))$}
       @unit_number_pattern = %r{
         ^\D*?
         (?:(?<unit>\d+(?=[\/|\s+]))[\/|\s+])?
