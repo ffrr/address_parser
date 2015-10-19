@@ -1,48 +1,46 @@
 require 'test_helper'
 
-class AddressParserBaseTest < Minitest::Test
-  def test_should_extract_address
-    puts AddressParser::Base.new('9/24-40 Springfield Avenue, Potts Point NSW 2011')
+class TestAddressParser < Minitest::Test
+  def test_things
+    address = AddressParser::Base.new('1107/2 Cunningham Street, Sydney NSW 2000')
       .process_address
 
-    puts '---'
-
-    puts AddressParser::Base.new('7/329 Bondi Road, Bondi Beach NSW 2026')
-      .process_address
-
-    puts '---'
-
-    puts AddressParser::Base.new('158-166 Day Street, Sydney NSW 2000')
-      .process_address
-
-    puts '---'
-
-    puts AddressParser::Base.new('C203 Globe Street, Sydney NSW 2000')
-      .process_address
-
-    puts '---'
-
-    puts AddressParser::Base.new('Globe street QLD 2000')
-      .process_address
-
-    puts '---'
-
-    puts AddressParser::Base.new('SYDNEY victoria 2000')
-      .process_address
-
-    puts '---'
-
-    puts AddressParser::Base.new('Shop 1 82 Elizabeth Street, Sydney NSW 2000')
-      .process_address
-
-    puts '---'
-
-    puts AddressParser::Base.new('2 BOND STREET, SYDNEY 2000')
-      .process_address
-
-    puts '---'
-
-    puts AddressParser::Base.new('Some street, NSW ')
-      .process_address
+    assert_equal '1107',       address[:unit]
+    assert_equal '2',          address[:number]
+    assert_equal 'Cunningham', address[:street]
+    assert_equal 'Street',     address[:street_type]
+    assert_equal 'Sydney',     address[:suburb]
+    assert_equal 'NSW',        address[:state]
+    assert_equal '2000',       address[:postcode]
   end
+
+  def test_parsing_address_when_unit_has_words_and_starts_with_number
+    address = AddressParser::Base.new('1108 The Connaught 187-189 Liverpool St')
+      .process_address
+
+    assert_equal '1108 The Connaught', address[:unit]
+    assert_equal '187-189',            address[:number]
+    assert_equal 'Liverpool',          address[:street]
+    assert_equal 'Street',             address[:street_type]
+  end
+
+  # def test_parsing_address_when_unit_has_words_and_starts_with_word
+  #   address = AddressParser::Base.new('Charles Stuart Suite 3 Lev 1 23-25 Bay St')
+  #     .process_address
+  #
+  #   assert_equal 'Charles Stuart Suite 3 Lev 1', address[:unit]
+  #   assert_equal '23-25',                        address[:number]
+  #   assert_equal 'Bay',                          address[:street]
+  #   assert_equal 'Street',                       address[:street_type]
+  # end
+  #
+  # def test_parsing_address_when_number_contains_words
+  #   address = AddressParser::Base.new('1/22a Victoria Avenue')
+  #     .process_address
+  #
+  #   assert_equal '1',        address[:unit]
+  #   assert_equal '22a',      address[:number]
+  #   assert_equal 'Victoria', address[:street]
+  #   assert_equal 'Avenue',   address[:street_type]
+  # end
 end

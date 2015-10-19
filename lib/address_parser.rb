@@ -10,24 +10,25 @@ module AddressParser
     def initialize(address)
       @address                = address
 
+      @unit_and_number     = nil
+
       @state_pattern       = nil
+      @street_pattern      = nil
       @postcode_pattern    = %r{\s?(?<postcode>(?:[2-7]\d{3}|08\d{2}))$}
-      @unit_number_pattern = %r{
-        ^\D*?
-        (?:(?<unit>\d+(?=[\/|\s+]))[\/|\s+])?
-        (?<number>(?:\d|-)+)
-      }x
+      @unit_number_pattern = %r{(?<unit>.*)(?<=[\/|\s])+(?<number>[a-z\d-]*)$}
+      #   ^\D*?
+      #   (?:(?<unit>\d+(?=[\/|\s+]))[\/|\s+])?
+      #   (?<number>(?:\d|-|\w)+)
+      # }x
 
       @result = {}
     end
 
     def process_address
-      puts @address
-
       extract_state
       extract_postcode
-      extract_unit_and_number
       extract_street_and_type
+      extract_unit_and_number
       extract_suburb
 
       @result
@@ -51,14 +52,19 @@ module AddressParser
 
     def extract_street_and_type
       type_match = STREET_TYPES.flatten.detect do |st|
-        @street_pattern = Regexp.new("(?<street>\\w+)\\s+#{st}", Regexp::IGNORECASE)
+        @street_pattern = Regexp.new(
+          "(?<unit_and_number>.*)((?<=[A-z\\d])*\\s(?<street>[A-z\\s]+)\\s+#{st})(?=(,|\\z))",
+          Regexp::IGNORECASE
+        )
+
         @address       =~ @street_pattern
       end
 
       street_match          = @street_pattern.match(@address)
       @address              = @address.sub(@street_pattern, '')
+      @unit_and_number      = street_match && street_match[:unit_and_number]
       @result[:street]      = street_match && street_match[:street]
-      @result[:street_type] = type_match
+      @result[:street_type] = STREET_TYPES.select { |s| s.include?(type_match) }.flatten[0]
     end
 
     def extract_suburb
@@ -67,10 +73,10 @@ module AddressParser
     end
 
     def extract_unit_and_number
-      match            = @unit_number_pattern.match(@address)
-      @address         = @address.sub(@unit_number_pattern, '')
-      @result[:unit]   = match && match[:unit]
-      @result[:number] = match && match[:number]
+      match            = @unit_number_pattern.match(@unit_and_number)
+      @address         = @address.sub(@unit_and_number, '')
+      @result[:unit]   = match && match[:unit].sub('/', '').strip
+      @result[:number] = match && match[:number].strip
     end
   end
 end
