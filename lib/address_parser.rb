@@ -15,20 +15,16 @@ module AddressParser
       @state_pattern       = nil
       @street_pattern      = nil
       @postcode_pattern    = %r{\s?(?<postcode>(?:[2-7]\d{3}|08\d{2}))$}
-      @unit_number_pattern = %r{(?<unit>.*)(?<=[\/|\s])+(?<number>[a-z\d-]*)$}
-      #   ^\D*?
-      #   (?:(?<unit>\d+(?=[\/|\s+]))[\/|\s+])?
-      #   (?<number>(?:\d|-|\w)+)
-      # }x
+      @unit_number_pattern = %r{((?<unit>.*)(?<=[\/|\s])+)?(?<number>[a-z\d-]*)$}
 
       @result = {}
     end
 
     def process_address
-      extract_state
-      extract_postcode
       extract_street_and_type
       extract_unit_and_number
+      extract_state
+      extract_postcode
       extract_suburb
 
       @result
@@ -53,11 +49,11 @@ module AddressParser
     def extract_street_and_type
       type_match = STREET_TYPES.flatten.detect do |st|
         @street_pattern = Regexp.new(
-          "(?<unit_and_number>.*)((?<=[A-z\\d])*\\s(?<street>[A-z\\s]+)\\s+#{st})(?=(,|\\z))",
+          "(?<unit_and_number>.*[\\d\\/]+[a-z]?)\\s((?<street>[A-z\\s]+)\\s+#{st})(?=(,|\\z))",
           Regexp::IGNORECASE
         )
 
-        @address       =~ @street_pattern
+        @address =~ @street_pattern
       end
 
       street_match          = @street_pattern.match(@address)
@@ -75,8 +71,9 @@ module AddressParser
     def extract_unit_and_number
       match            = @unit_number_pattern.match(@unit_and_number)
       @address         = @address.sub(@unit_and_number, '')
-      @result[:unit]   = match && match[:unit].sub('/', '').strip
-      @result[:number] = match && match[:number].strip
+
+      @result[:unit]   = match[:unit] && match[:unit].sub('/', '').strip
+      @result[:number] = match[:number] && match[:number].strip
     end
   end
 end
