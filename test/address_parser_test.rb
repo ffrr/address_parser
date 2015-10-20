@@ -1,7 +1,7 @@
 require 'test_helper'
 
 class TestAddressParser < Minitest::Test
-  def test_things
+  def test_parsing_full_address_with_all_attributes
     address = AddressParser::Base.new('1107/2 Cunningham Street, Sydney NSW 2000')
       .process_address
 
@@ -83,10 +83,21 @@ class TestAddressParser < Minitest::Test
     assert_equal 'Street', address[:street_type]
   end
 
-  def test_another_thing
-    address = AddressParser::Base.new('Dodgy address')
+  def test_parsing_with_pobox_and_full_address
+    address = AddressParser::Base.new('PO box 12 121, Glenroy VIC')
       .process_address
 
-    puts address
+    assert_equal 'PO box',  address[:number]
+    assert_equal '12 121',  address[:street]
+    assert_equal 'VIC',     address[:state]
+    assert_equal 'Glenroy', address[:suburb]
+  end
+
+  def test_parsing_with_pobox_with_partial_address
+    address = AddressParser::Base.new('pobox 121')
+      .process_address
+
+    assert_equal 'pobox', address[:number]
+    assert_equal '121',   address[:street]
   end
 end
