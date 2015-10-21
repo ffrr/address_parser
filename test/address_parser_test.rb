@@ -84,13 +84,14 @@ class TestAddressParser < Minitest::Test
   end
 
   def test_parsing_with_pobox_and_full_address
-    address = AddressParser::Base.new('PO box 12 121, Glenroy VIC')
+    address = AddressParser::Base.new('PO box 12 121, Glenroy VIC 2000')
       .process_address
 
     assert_equal 'PO box',  address[:number]
     assert_equal '12 121',  address[:street]
     assert_equal 'VIC',     address[:state]
     assert_equal 'Glenroy', address[:suburb]
+    assert_equal '2000',    address[:postcode]
   end
 
   def test_parsing_with_pobox_with_partial_address
@@ -99,5 +100,36 @@ class TestAddressParser < Minitest::Test
 
     assert_equal 'pobox', address[:number]
     assert_equal '121',   address[:street]
+  end
+
+  def test_parsing_with_pobox_having_chars_in_number
+    address = AddressParser::Base.new('pobox 121a')
+      .process_address
+
+    assert_equal 'pobox', address[:number]
+    assert_equal '121a',   address[:street]
+  end
+
+  def test_parsing_somewhat_dodgy_address
+    address = AddressParser::Base.new('123 Something Somewhere')
+      .process_address
+
+    assert_equal '123',                 address[:number]
+    assert_equal 'Something Somewhere', address[:street]
+  end
+
+  def test_parsing_total_dodgy_address
+    address = AddressParser::Base.new('1088 Incredible unit Lev 7 1-123x Foo Bar')
+      .process_address
+
+    assert_equal '1088 Incredible unit Lev 7', address[:unit]
+    assert_equal '1-123x',                     address[:number]
+    assert_equal 'Foo Bar',                    address[:street]
+  end
+
+  def test_parsing_unparsabel_address_raises_error
+    assert_raises AddressParser::Exceptions::ParsingError do
+      AddressParser::Base.new('Dodgy address').process_address
+    end
   end
 end

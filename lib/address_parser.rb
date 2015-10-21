@@ -1,6 +1,7 @@
 require 'address_parser/version'
 require 'address_parser/states'
 require 'address_parser/street_types'
+require 'address_parser/exceptions'
 
 module AddressParser
   class Base
@@ -16,7 +17,7 @@ module AddressParser
 
       @state_pattern       = nil
       @street_pattern      = nil
-      @pobox_pattern       = %r{(?<pobox>p[.\s]?\s?o[.\s]?\s*box)\s(?<number>[\d\s]{1,6})}i
+      @pobox_pattern       = %r{(?<pobox>p[.\s]?\s?o[.\s]?\s*box)\s(?<number>[\w\s]{1,6})}i
       @postcode_pattern    = %r{\s?(?<postcode>(?:[2-7]\d{3}|08\d{2}))}
       @unit_number_pattern = %r{((?<unit>.*)(?<=[\/|\s])+)?(?<number>[a-z\d-]*)$}i
 
@@ -30,8 +31,13 @@ module AddressParser
       extract_pobox if has_pobox?
       extract_street_and_type if @street_pattern
       extract_unit_and_number if @unit_and_number
+
       extract_state
       extract_postcode
+
+      attempt_to_save_address if result_is_funky? && @address =~ /\d+/
+      raise AddressParser::Exceptions::ParsingError if result_is_funky?
+
       extract_suburb
 
       @result
@@ -71,7 +77,7 @@ module AddressParser
 
     def extract_unit_and_number
       match            = @unit_number_pattern.match(@unit_and_number)
-      @address         = @address.sub(@unit_and_number, '') if match
+      @address         = @address.gsub(@unit_and_number, '') if match
 
       @result[:unit]   = match[:unit] && match[:unit].sub('/', '').strip if match
       @result[:number] = match[:number] && match[:number].strip if match
@@ -79,7 +85,25 @@ module AddressParser
 
     private
 
-    def check_if_address_is_dodgy
+    def attempt_to_save_address
+      pattern = %r{
+      (?<unit>.*(?=(\s[\d]+)))?
+      \s?
+      (?<number>[a-z\d|-]+)
+      \s?
+      (?<street>[\w\s]+)
+      }ix
+
+      match = pattern.match(@address)
+      @address = @address.gsub(pattern, '') if match
+
+      @result[:unit] = match[:unit]
+      @result[:number] = match[:number]
+      @result[:street] = match[:street]
+    end
+
+    def result_is_funky?
+      @result.values.compact.empty? && @address =~ /[^\d]+/
     end
 
     def has_pobox?
