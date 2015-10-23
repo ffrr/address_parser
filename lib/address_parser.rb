@@ -25,15 +25,17 @@ module AddressParser
     end
 
     def process_address
-      set_street_unit_number_pattern
       set_state_pattern
 
       extract_pobox if has_pobox?
-      extract_street_and_type if @street_pattern
-      extract_unit_and_number if @unit_and_number
 
       extract_state
       extract_postcode
+
+      set_street_unit_number_pattern
+
+      extract_street_and_type if @street_pattern
+      extract_unit_and_number if @unit_and_number
 
       attempt_to_save_address if result_is_funky? && @address =~ /\d+/
       raise AddressParser::Exceptions::ParsingError if result_is_funky?
@@ -46,25 +48,25 @@ module AddressParser
     def extract_pobox
       match = @pobox_pattern.match(@address)
 
-      @address         = @address.sub(@pobox_pattern, '')
+      @address         = @address.gsub(@pobox_pattern, '')
       @result[:number] = match && match[:pobox]
       @result[:street] = match && match[:number]
     end
 
     def extract_postcode
       match              = @postcode_pattern.match(@address)
-      @address           = @address.sub(@postcode_pattern, '')
+      @address           = @address.gsub(@postcode_pattern, '').strip
       @result[:postcode] = match && match[:postcode]
     end
 
     def extract_state
-      @address = @address.sub(@state_pattern, ' ')
+      @address = @address.gsub(@state_pattern, '').strip
       @result[:state] = STATES.select { |s| s.include?(@state_match) }.flatten[0]
     end
 
     def extract_street_and_type
       street_match          = @street_pattern.match(@address)
-      @address              = @address.sub(@street_pattern, '')
+      @address              = @address.gsub(@street_pattern, '')
       @unit_and_number      = street_match && street_match[:unit_and_number]
       @result[:street]      = street_match && street_match[:street]
       @result[:street_type] = STREET_TYPES.select { |s| s.include?(@street_type_match) }.flatten[0]
@@ -79,7 +81,7 @@ module AddressParser
       match            = @unit_number_pattern.match(@unit_and_number)
       @address         = @address.gsub(@unit_and_number, '') if match
 
-      @result[:unit]   = match[:unit] && match[:unit].sub('/', '').strip if match
+      @result[:unit]   = match[:unit] && match[:unit].gsub('/', '').strip if match
       @result[:number] = match[:number] && match[:number].strip if match
     end
 
@@ -127,8 +129,11 @@ module AddressParser
 
     def set_state_pattern
       @state_match = STATES.flatten.detect do |s|
-        @state_pattern  = Regexp.new("\\s*#{s}\\s*", Regexp::IGNORECASE)
-        @address       =~ @state_pattern
+        @state_pattern  = Regexp.new(
+          "(?<=[\\s|,])#{s}(?=(?:\\s\\d)|\\z)",
+          Regexp::IGNORECASE
+        )
+        @address =~ @state_pattern
       end
     end
   end

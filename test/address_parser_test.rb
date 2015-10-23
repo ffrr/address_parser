@@ -132,4 +132,15 @@ class TestAddressParser < Minitest::Test
       AddressParser::Base.new('Dodgy address').process_address
     end
   end
+
+  def test_parsing_address_with_multiple_street_types_as_part_of_street_name
+    address = AddressParser::Base.new('61 Cope Street Lane Cove NSW 2066')
+      .process_address
+
+    assert_equal '61',               address[:number]
+    assert_equal 'Cope Street Lane', address[:street]
+    assert_equal 'Cove',             address[:street_type]
+    assert_equal 'NSW',              address[:state]
+    assert_equal '2066',             address[:postcode]
+  end
 end
