@@ -143,4 +143,15 @@ class TestAddressParser < Minitest::Test
     assert_equal 'NSW',              address[:state]
     assert_equal '2066',             address[:postcode]
   end
+
+  def test_parsing_address_having_double_postcode
+    address = AddressParser::Base.new('2066 Some Street NSW 2066')
+      .process_address
+
+    assert_equal '2066',   address[:number]
+    assert_equal 'Some',   address[:street]
+    assert_equal 'Street', address[:street_type]
+    assert_equal 'NSW',    address[:state]
+    assert_equal '2066',   address[:postcode]
+  end
 end
