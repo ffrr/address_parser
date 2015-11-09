@@ -4,6 +4,11 @@ require 'address_parser/street_types'
 require 'address_parser/exceptions'
 
 module AddressParser
+
+  def self.new(address)
+    Base.new(address)
+  end
+
   class Base
     include States
     include StreetTypes

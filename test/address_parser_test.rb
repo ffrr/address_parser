@@ -1,6 +1,13 @@
 require 'test_helper'
 
 class TestAddressParser < Minitest::Test
+
+  def test_initializer_on_address_parser_module
+    address1 = AddressParser::Base.new('1107/2 Cunningham Street, Sydney NSW 2000').process_address
+    address2 = AddressParser.new('1107/2 Cunningham Street, Sydney NSW 2000').process_address
+    assert_equal address1, address2
+  end
+
   def test_parsing_full_address_with_all_attributes
     address = AddressParser::Base.new('1107/2 Cunningham Street, Sydney NSW 2000')
       .process_address
