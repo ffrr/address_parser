@@ -14,7 +14,7 @@ module AddressParser
     include StreetTypes
 
     def initialize(address)
-      @address                = address
+      @address             = address
 
       @unit_and_number     = nil
       @street_type_match   = nil
@@ -122,8 +122,12 @@ module AddressParser
     def set_street_unit_number_pattern
       @street_type_match = STREET_TYPES.flatten.detect do |st|
         @street_pattern = Regexp.new(
-          "(?:(?<unit_and_number>.*[\\d\\/]+[a-z]?)\\s)?((?<street>[A-z\\s]+)\\s+#{st})(?=(,|\\z))",
-          Regexp::IGNORECASE
+          "
+          (?:(?<unit_and_number>.*[\\d\\/]+[a-z]?)\\s)?
+          ((?<street>[A-z\\s]+)\\s+#{st})
+          (?=#{(@address =~ /,/).nil? ? '\\z' : ','})
+          ",
+          Regexp::IGNORECASE | Regexp::EXTENDED
         )
 
         @address =~ @street_pattern
