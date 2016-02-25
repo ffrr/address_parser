@@ -17,9 +17,9 @@ module Services
       uri = URI.parse(prepare_google_maps_api_url)
       http = Net::HTTP.new(uri.host)
       response = http.request(Net::HTTP::Get.new(uri.request_uri))
-      response = JSON.parse(response.body)
+      response = JSON.parse(response.body) if response.code == "200"
 
-      if response["status"] == "OK"
+      if response && response["status"] == "OK"
         response["results"][0]["address_components"].each do |component|
           case component["types"][0]
             when "subpremise"
