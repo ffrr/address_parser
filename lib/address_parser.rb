@@ -2,18 +2,38 @@ require 'address_parser/version'
 require 'address_parser/states'
 require 'address_parser/street_types'
 require 'address_parser/exceptions'
+require 'services/parse_with_google_maps_api_service'
 
 module AddressParser
 
-  def self.new(address)
-    Base.new(address)
+  class << self
+    attr_accessor :configuration
+  end
+
+  def self.configure
+    self.configuration ||= Configuration.new
+    yield(configuration)
+  end
+
+  def self.new(address, use_google_maps=nil)
+    Base.new(address, use_google_maps)
+  end
+
+  class Configuration
+    attr_accessor :google_maps_api_key, :google_maps_client_id, :google_maps_cryptographic_key
+
+    def initialize
+      @google_maps_api_key = nil
+      @google_maps_client_id = nil
+      @google_maps_cryptographic_key = nil
+    end
   end
 
   class Base
     include States
     include StreetTypes
 
-    def initialize(address)
+    def initialize(address, use_google_maps=false)
       @address             = address
 
       @unit_and_number     = nil
@@ -26,6 +46,7 @@ module AddressParser
       @postcode_pattern    = %r{\s?(?<postcode>(?:[2-7]\d{3}|08\d{2}))$}
       @unit_number_pattern = %r{((?<unit>.*)(?<=[\/|\s])+)?(?<number>[a-z\d-]*)$}i
 
+      @use_google_maps = use_google_maps
       @result = {}
     end
 
@@ -46,6 +67,10 @@ module AddressParser
       raise AddressParser::Exceptions::ParsingError if result_is_funky?
 
       extract_suburb
+
+      if @use_google_maps
+        @result[:google_maps_results] = Services::ParseWithGoogleMapsApiService.new(@address).parse
+      end
 
       @result
     end
