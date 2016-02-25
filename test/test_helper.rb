@@ -5,4 +5,8 @@ require 'minitest/autorun'
 
 require 'webmock/minitest'
 
-WebMock.disable_net_connect!(allow_localhost: true)
+WebMock.disable_net_connect!
+
+Dir[Dir.pwd + "/test/fixtures/google_fixtures.rb"].each do |file|
+  require file
+end
