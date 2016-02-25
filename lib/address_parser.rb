@@ -8,6 +8,29 @@ require 'json'
 
 module AddressParser
 
+  class << self
+    attr_accessor :configuration
+  end
+
+  def self.configure
+    self.configuration ||= Configuration.new
+    yield(configuration)
+  end
+
+  def self.new(address, use_google_maps=nil)
+    Base.new(address, use_google_maps)
+  end
+
+  class Configuration
+    attr_accessor :google_maps_api_key, :google_maps_client_id, :google_maps_cryptographic_key
+
+    def initialize
+      @google_maps_api_key = nil
+      @google_maps_client_id = nil
+      @google_maps_cryptographic_key = nil
+    end
+  end
+
   def self.new(address, g_maps_api_key=nil)
     Base.new(address, g_maps_api_key)
   end
