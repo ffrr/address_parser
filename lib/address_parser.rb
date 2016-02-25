@@ -2,18 +2,21 @@ require 'address_parser/version'
 require 'address_parser/states'
 require 'address_parser/street_types'
 require 'address_parser/exceptions'
+require 'net/http'
+require 'uri'
+require 'json'
 
 module AddressParser
 
-  def self.new(address)
-    Base.new(address)
+  def self.new(address, g_maps_api_key=nil)
+    Base.new(address, g_maps_api_key)
   end
 
   class Base
     include States
     include StreetTypes
 
-    def initialize(address)
+    def initialize(address, g_maps_api_key=nil)
       @address             = address
 
       @unit_and_number     = nil
@@ -26,6 +29,7 @@ module AddressParser
       @postcode_pattern    = %r{\s?(?<postcode>(?:[2-7]\d{3}|08\d{2}))$}
       @unit_number_pattern = %r{((?<unit>.*)(?<=[\/|\s])+)?(?<number>[a-z\d-]*)$}i
 
+      @g_maps_api_key = g_maps_api_key
       @result = {}
     end
 
@@ -47,7 +51,57 @@ module AddressParser
 
       extract_suburb
 
+      # only use Google maps for adress parsing when api_key is present
+      make_g_maps_api_call if @g_maps_api_key
+
       @result
+    end
+
+    def make_g_maps_api_call
+      g_maps_results = {}
+      uri = URI.parse("https://maps.googleapis.com/maps/api/geocode/json?address=#{URI.encode(@address)},
+        +Australia&
+        key=#{@g_maps_api_key}&
+        channel=address-parser"
+      )
+      http = Net::HTTP.new(uri.host)
+      response = http.request(Net::HTTP::Get.new(uri.request_uri))
+      response = JSON.parse(response.body)
+
+      if response["status"] == "OK"
+        response["results"][0]["address_components"].each do |component|
+          case component["types"][0]
+            when "subpremise"
+              g_maps_results[:unit] = component["long_name"]
+            when "street_number"
+              g_maps_results[:number] = component["long_name"]
+            when "route"
+              g_maps_results[:street] = component["long_name"]
+            when "locality"
+              g_maps_results[:suburb] = component["long_name"]
+            when "administrative_area_level_1"
+              g_maps_results[:state] = component["short_name"]
+            when "postal_code"
+              g_maps_results[:postcode] = component["long_name"]
+          end
+        end
+
+        if g_maps_results[:street]
+          g_maps_results[:street_type] = STREET_TYPES.flatten.detect do |s|
+            @street_type_pattern  = Regexp.new(
+              "(?<=[\\s|,])#{s}(?=(?:\\s\\d)|\\z)",
+              Regexp::IGNORECASE
+            )
+            g_maps_results[:street] =~ @street_type_pattern
+          end
+        end
+
+        if g_maps_results[:street_type]
+          g_maps_results[:street] = g_maps_results[:street].gsub(g_maps_results[:street_type], '').strip
+        end
+      end
+
+      @result[:g_maps_results] = g_maps_results
     end
 
     def extract_pobox
