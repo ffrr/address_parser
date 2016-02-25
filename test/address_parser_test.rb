@@ -161,22 +161,4 @@ class TestAddressParser < Minitest::Test
     assert_equal 'NSW',    address[:state]
     assert_equal '2066',   address[:postcode]
   end
-
-  def test_calling_g_maps_api_for_address_without_commas
-    stub_request(:get, "http://maps.googleapis.com/maps/api/geocode/json?%20%20%20%20%20%20%20%20channel="\
-      "address-parser&%20%20%20%20%20%20%20%20key=123456&address=118%20Walker%20Street%20DANDENONG,"\
-      "%20%20%20%20%20%20%20%20%20Australia").
-      with(:headers => {'Accept'=>'*/*', 'User-Agent'=>'Ruby'}).
-      to_return(:status => 200, :body => GoogleFixtures.walker_street_response_hash.to_json)
-
-    address = AddressParser::Base.new("118 Walker Street DANDENONG VIC 3175",
-      "123456").process_address[:g_maps_results]
-
-    assert_equal '118',       address[:number]
-    assert_equal 'Walker',    address[:street]
-    assert_equal 'Street',    address[:street_type]
-    assert_equal 'Dandenong', address[:suburb]
-    assert_equal 'VIC',       address[:state]
-    assert_equal '3175',      address[:postcode]
-  end
 end
