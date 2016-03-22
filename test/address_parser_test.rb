@@ -134,10 +134,11 @@ class TestAddressParser < Minitest::Test
     assert_equal 'Foo Bar',                    address[:street]
   end
 
-  def test_parsing_unparsabel_address_raises_error
-    assert_raises AddressParser::Exceptions::ParsingError do
-      AddressParser::Base.new('Dodgy address').process_address
-    end
+  def test_parsing_unparsabel_address_returns_it_untouched
+    address = AddressParser::Base.new('Dodgy address').process_address
+
+    assert       address[:unparsable]
+    assert_equal 'Dodgy address', address[:original_address]
   end
 
   def test_parsing_address_with_multiple_street_types_as_part_of_street_name

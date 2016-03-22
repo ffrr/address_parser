@@ -73,6 +73,8 @@ module AddressParser
       end
 
       @result
+    rescue
+      @result = { unparsable: true, original_address: @address }
     end
 
     def extract_pobox
